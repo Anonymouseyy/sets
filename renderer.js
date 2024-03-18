@@ -1,34 +1,18 @@
 main();
 
-function createShader(gl, type, source) {
-    var shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-    if (success) {
-      return shader;
-    }
-   
-    console.log(gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
-}
-
-function createProgram(gl, fragmentShader) {
-    var program = gl.createProgram();
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-    var success = gl.getProgramParameter(program, gl.LINK_STATUS);
-    if (success) {
-      return program;
-    }
-   
-    console.log(gl.getProgramInfoLog(program));
-    gl.deleteProgram(program);
-}
-
 function main() {
     var canvas = document.getElementById("canvas");
-    var source = `
+    var vshader = `
+    void main() {
+
+        // Set vertex position: vec4(X, Y, Z, 1.0)
+        gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
+  
+        // Point size in pixels: float
+        gl_PointSize = 10.0;
+    };`
+
+    var fshader = `
     void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
         // Normalized pixel coordinates (from 0 to 1)
         vec2 uv = fragCoord/iResolution.xy;
@@ -52,6 +36,20 @@ function main() {
         return;
     }
 
-    var fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, source);
-    var program = createProgram(gl, fragmentShader);
+    // Compile the vertex shader
+    var vs = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vs, vshader);
+    gl.compileShader(vs);
+
+    // Compile the fragment shader
+    var fs = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fs, fshader);
+    gl.compileShader(fs);
+
+    // Create the WebGL program and use it
+        var program = gl.createProgram();
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    gl.useProgram(program);
 }

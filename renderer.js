@@ -47,9 +47,21 @@ function main() {
     gl.compileShader(fs);
 
     // Create the WebGL program and use it
-        var program = gl.createProgram();
+    var program = gl.createProgram();
     gl.attachShader(program, vs);
     gl.attachShader(program, fs);
     gl.linkProgram(program);
     gl.useProgram(program);
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+    // Clear the canvas
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // Draw points
+    gl.drawArrays(
+        gl.POINTS, // mode
+        0,         // starting point
+        1          // number of points to draw
+    );
 }

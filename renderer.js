@@ -3,14 +3,11 @@ main();
 function main() {
     var canvas = document.getElementById("canvas");
     var vshader = `
-    void main() {
+    attribute vec3 coordinates;
 
-        // Set vertex position: vec4(X, Y, Z, 1.0)
-        gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
-  
-        // Point size in pixels: float
-        gl_PointSize = 10.0;
-    };`
+    void main(void) {
+        gl_Position = vec4(coordinates, 1.0);
+    }`
 
     var fshader = `
     void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
@@ -23,6 +20,7 @@ function main() {
         // Output to screen
         fragColor = vec4(col,1.0);
     }`
+
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
     // Initialize the GL context
@@ -58,10 +56,15 @@ function main() {
     // Clear the canvas
     gl.clear(gl.COLOR_BUFFER_BIT);
 
+    const vertices = [
+        -1,1,0.0, // top left
+        -1,-1,0.0, // bottom left
+        1,-1,0.0, // bottom right
+        1,1,1, // top right
+    ];
+
     // Draw points
     gl.drawArrays(
-        gl.POINTS, // mode
-        0,         // starting point
-        1          // number of points to draw
+        vertices
     );
 }

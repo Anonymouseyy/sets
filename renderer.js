@@ -3,28 +3,39 @@ main();
 function main() {
     var canvas = document.getElementById("canvas");
     var vshader = `
-    attribute vec3 coordinates;
+    #version 300 es
 
-    void main(void) {
-        gl_Position = vec4(coordinates, 1.0);
+    in vec4 vertexPosition;
+
+    void main() {
+        gl_Position = vertexPosition;
     }`
 
     var fshader = `
-    void mainImage( out vec4 fragColor, in vec2 fragCoord ) {
-        // Normalized pixel coordinates (from 0 to 1)
-        vec2 uv = fragCoord/iResolution.xy;
+    #version 300 es
+    precision highp float;
 
-        // Time varying pixel color
-        vec3 col = 0.5 + 0.5*cos(iTime+uv.xyx+vec3(0,2,4));
+    uniform vec2 canvasSize;
+    uniform float time;
+    out vec4 fragColor;
 
-        // Output to screen
-        fragColor = vec4(col,1.0);
+    void main() {
+        vec2 coord = gl_FragCoord.xy/canvasSize.xy; // [0,1]
+        coord = 2.*coord - 1.; // [-1,1]
+        float scale = (sin(time) + 1.)/2.; // from 1 to 0
+        coord /= scale; // from [-1,1] to [-infinity,infinity]
+        if (abs(coord.x) < 1. && abs(coord.y) < 1.) {
+            coord = (coord + 1.)/2.; // [0,1]
+            fragColor = vec4(coord.x, coord.y, 1.-coord.x, 1);
+        } else {
+            fragColor = vec4(1,1,1,1);
+        }
     }`
 
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
     // Initialize the GL context
-    var gl = canvas.getContext("webgl");
+    var gl = canvas.getContext("webgl2");
 
     // Only continue if WebGL is available and working
     if (gl === null) {
@@ -34,37 +45,48 @@ function main() {
         return;
     }
 
-    // Compile the vertex shader
-    var vs = gl.createShader(gl.VERTEX_SHADER);
-    gl.shaderSource(vs, vshader);
-    gl.compileShader(vs);
+    function createShader(type, sourceCode) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, sourceCode.trim());
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            throw gl.getShaderInfoLog(shader);
+        }
+        return shader;
+    }
 
-    // Compile the fragment shader
-    var fs = gl.createShader(gl.FRAGMENT_SHADER);
-    gl.shaderSource(fs, fshader);
-    gl.compileShader(fs);
-
-    // Create the WebGL program and use it
-    var program = gl.createProgram();
-    gl.attachShader(program, vs);
-    gl.attachShader(program, fs);
+    const program = gl.createProgram();
+    gl.attachShader(program, createShader(gl.VERTEX_SHADER, vshader));
+    gl.attachShader(program, createShader(gl.FRAGMENT_SHADER, fshader));
     gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        throw gl.getProgramInfoLog(program);
+    }
     gl.useProgram(program);
 
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-
-    // Clear the canvas
-    gl.clear(gl.COLOR_BUFFER_BIT);
-
     const vertices = [
-        -1,1,0.0, // top left
-        -1,-1,0.0, // bottom left
-        1,-1,0.0, // bottom right
-        1,1,1, // top right
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+        [1, 1],
     ];
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices.flat()), gl.STATIC_DRAW);
 
-    // Draw points
-    gl.drawArrays(
-        vertices
+    const vertexPosition = gl.getAttribLocation(program, "vertexPosition");
+    gl.enableVertexAttribArray(vertexPosition);
+    gl.vertexAttribPointer(vertexPosition, vertices[0].length, gl.FLOAT, false, 0, 0);
+
+    gl.uniform2f(
+        gl.getUniformLocation(program, 'canvasSize'),
+        canvas.width, canvas.height
     );
+    const timeUniform = gl.getUniformLocation(program, 'time');
+
+    function draw() {
+        gl.uniform1f(timeUniform, performance.now() / 1000.);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, vertices.length);
+        requestAnimationFrame(draw);
+    }
+    draw();
 }

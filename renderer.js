@@ -32,7 +32,7 @@ function main() {
         }
     }`
 
-    canvas.width  = window.innerWidth;
+    canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     // Initialize the GL context
     var gl = canvas.getContext("webgl2");

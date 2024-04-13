@@ -20,16 +20,14 @@ function main() {
     out vec4 fragColor;
 
     void main() {
-        vec2 coord = gl_FragCoord.xy/canvasSize.xy; // [0,1]
-        coord = 2.*coord - 1.; // [-1,1]
-        float scale = (sin(time) + 1.)/2.; // from 1 to 0
-        coord /= scale; // from [-1,1] to [-infinity,infinity]
-        if (abs(coord.x) < 1. && abs(coord.y) < 1.) {
-            coord = (coord + 1.)/2.; // [0,1]
-            fragColor = vec4(coord.x, coord.y, 1.-coord.x, 1);
-        } else {
-            fragColor = vec4(1,1,1,1);
-        }
+        // Normalized pixel coordinates (from 0 to 1)
+        vec2 uv = gl_FragCoord.xy/canvasSize;
+
+        // Time varying pixel color
+        vec3 col = 0.5 + 0.5*cos(time+uv.xyx+vec3(0,2,4));
+
+        // Output to screen
+        fragColor = vec4(col,1.0);
     }`
 
     canvas.width = window.innerWidth;
